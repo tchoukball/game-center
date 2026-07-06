@@ -2,7 +2,7 @@
 import { ref, computed, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import TchoukScore from '../components/TchoukScore.vue';
-import { findPlatform, platformName, buildExportUrl } from '../config/platforms';
+import { findPlatform, platformName } from '../config/platforms';
 import type { TchoukTeam, GameSheet } from '../types';
 
 const props = defineProps<{ slug: string; edition: string }>();
@@ -17,11 +17,6 @@ watchEffect(() => {
 
 // Scopes this match's state and storage.
 const matchKey = computed(() => `${props.slug}:${props.edition}`);
-
-// The concrete export URL, with the edition code substituted for `{ID}`.
-const exportUrl = computed(() =>
-  platform.value ? buildExportUrl(platform.value, props.edition) : '',
-);
 
 const teams: TchoukTeam[] = [
   { id: 'italy', name: 'Italy' },
@@ -43,7 +38,6 @@ const onGameEventChange = (data: GameSheet) => {
         <h1>Game Center</h1>
         <p class="meta">{{ platformName(platform) }} · Edition {{ edition }}</p>
       </div>
-      <a class="export" :href="exportUrl" target="_blank" rel="noopener">Export</a>
     </header>
     <TchoukScore
       :teams="teams"
@@ -76,14 +70,6 @@ h1 {
   line-height: 1;
 }
 .back:hover { color: #e2e8f0; }
-.export {
-  color: #60a5fa;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.export:hover { text-decoration: underline; }
 .debug {
   margin-top: 2rem;
   padding: 1rem;
