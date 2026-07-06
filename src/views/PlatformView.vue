@@ -2,6 +2,7 @@
 import { ref, computed, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import { findPlatform, platformName, platforms } from '../config/platforms';
+import QrScanner from '../components/QrScanner.vue';
 
 const props = defineProps<{ slug: string }>();
 
@@ -17,12 +18,20 @@ watchEffect(() => {
 });
 
 const editionCode = ref('');
+const scanning = ref(false);
 
 // Enter an edition code, then open that match's game center.
 const submit = () => {
   const edition = editionCode.value.trim();
   if (!edition || !platform.value) return;
   router.push({ name: 'game-center', params: { slug: props.slug, edition } });
+};
+
+// A scanned QR code becomes the edition code and submits immediately.
+const onScan = (value: string) => {
+  scanning.value = false;
+  editionCode.value = value.trim();
+  submit();
 };
 </script>
 
@@ -40,9 +49,13 @@ const submit = () => {
         autofocus
       />
       <button type="submit" :disabled="!editionCode.trim()">Open match center</button>
+      <button type="button" class="scan" @click="scanning = true">
+        <span aria-hidden="true">⛶</span> Scan QR code
+      </button>
     </form>
     <RouterLink v-if="canChangePlatform" class="back" :to="{ name: 'home' }">← Change platform</RouterLink>
   </main>
+  <QrScanner v-if="scanning" @scan="onScan" @close="scanning = false" />
 </template>
 
 <style scoped>
@@ -85,6 +98,17 @@ button {
 }
 button:hover:not(:disabled) { background: #1d4ed8; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
+.scan {
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+}
+.scan:hover:not(:disabled) { background: #0f172a; }
 .back {
   display: block;
   text-align: center;
