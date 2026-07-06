@@ -1,15 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import TchoukScore from './components/TchoukScore.vue';
+import { RouterView } from 'vue-router';
 import ConfirmDialog from './components/ConfirmDialog.vue';
-import type { TchoukTeam, GameSheet } from './types';
 
-const teams: TchoukTeam[] = [
-  { id: 'italy', name: 'Italy' },
-  { id: 'switzerland-m15-bejune', name: 'Switzerland M15 BEJUNE' },
-];
-
-const lastEvent = ref<GameSheet | null>(null);
 const isOnline = ref(navigator.onLine);
 const transientMessage = ref<string | null>(null);
 let messageTimer: ReturnType<typeof setTimeout> | undefined;
@@ -38,11 +31,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('offline', handleOffline);
   clearTimeout(messageTimer);
 });
-
-const onGameEventChange = (data: GameSheet) => {
-  lastEvent.value = data;
-  console.log('game-event-change', data);
-};
 </script>
 
 <template>
@@ -58,14 +46,7 @@ const onGameEventChange = (data: GameSheet) => {
       {{ transientMessage }}
     </div>
   </Transition>
-  <main>
-    <h1>Game Center</h1>
-    <TchoukScore
-      :teams="teams"
-      @game-event-change="onGameEventChange"
-    />
-    <pre v-if="lastEvent" class="debug">{{ JSON.stringify(lastEvent, null, 2) }}</pre>
-  </main>
+  <RouterView />
   <ConfirmDialog />
 </template>
 
@@ -81,22 +62,6 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-}
-main { width: 100%; max-width: 720px; }
-h1 {
-  text-align: center;
-  margin: 0 0 2rem;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
-}
-.debug {
-  margin-top: 2rem;
-  padding: 1rem;
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  overflow-x: auto;
 }
 .status-banner {
   position: fixed;

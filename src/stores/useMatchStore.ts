@@ -13,13 +13,16 @@ import type {
   TeamId,
 } from '../types';
 
-// Persist the whole sheet to localStorage so a refresh restores the match.
-// The key is versioned so a future format change can invalidate old data.
-const STORAGE_KEY = 'tchoukscorer:sheet:v1';
+// Persist each match's sheet to localStorage so a refresh restores it. The key
+// is versioned (so a future format change can invalidate old data) and scoped
+// by `matchKey` so different matches (platform + id) never share a sheet.
+const STORAGE_PREFIX = 'tchoukscorer:sheet:v1';
 
-const loadSheet = (): GameSheet => {
+const storageKey = (matchKey: string) => `${STORAGE_PREFIX}:${matchKey}`;
+
+const loadSheet = (matchKey: string): GameSheet => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(matchKey));
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed?.teams) && Array.isArray(parsed?.events)) {
@@ -32,94 +35,100 @@ const loadSheet = (): GameSheet => {
   return { teams: [], events: [] };
 };
 
-// THE single source of truth: one sheet, holding only the teams and the event
-// log. Every other value below is *calculated* from `sheet.events`.
-const sheet = reactive<GameSheet>(loadSheet());
+// Each match gets one store instance, cached by key so remounting the same
+// match (e.g. navigating away and back) reuses the same reactive sheet.
+type MatchStore = ReturnType<typeof createMatchStore>;
+const stores = new Map<string, MatchStore>();
 
-// Save on every change to the single source of truth.
-watch(
-  sheet,
-  () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sheet));
-    } catch {
-      // Storage full or unavailable — ignore; in-memory state still works.
-    }
-  },
-  { deep: true },
-);
+function createMatchStore(matchKey: string) {
+  // THE single source of truth for this match: one sheet, holding only the
+  // teams and the event log. Every other value below is *calculated* from
+  // `sheet.events`.
+  const sheet = reactive<GameSheet>(loadSheet(matchKey));
 
-// Derived state — each of these recomputes whenever the one watched variable
-// (the sheet's event log) changes.
-const scores = computed(() => computeScores(sheet.events));
-const phase = computed(() => currentPhase(sheet.events));
-const period = computed(() => currentPeriod(sheet.events));
-const startedAt = computed(() => gameStartedAt(sheet.events));
-const canScore = computed(() => phase.value === 'period_started');
-const lastActionAt = computed(() => {
-  const last = sheet.events[sheet.events.length - 1];
-  return last ? last.at : null;
-});
+  // Save on every change to the single source of truth.
+  watch(
+    sheet,
+    () => {
+      try {
+        localStorage.setItem(storageKey(matchKey), JSON.stringify(sheet));
+      } catch {
+        // Storage full or unavailable — ignore; in-memory state still works.
+      }
+    },
+    { deep: true },
+  );
 
-const recordEvent = (
-  type: TchoukEventType,
-  extra: Partial<TchoukEvent> = {},
-) => {
-  sheet.events.push({
-    type,
-    at: new Date().toISOString(),
-    ...extra,
+  // Derived state — each of these recomputes whenever the one watched variable
+  // (the sheet's event log) changes.
+  const scores = computed(() => computeScores(sheet.events));
+  const phase = computed(() => currentPhase(sheet.events));
+  const period = computed(() => currentPeriod(sheet.events));
+  const startedAt = computed(() => gameStartedAt(sheet.events));
+  const canScore = computed(() => phase.value === 'period_started');
+  const lastActionAt = computed(() => {
+    const last = sheet.events[sheet.events.length - 1];
+    return last ? last.at : null;
   });
-};
 
-const removeEvent = (index: number) => {
-  if (index >= 0 && index < sheet.events.length) sheet.events.splice(index, 1);
-};
-
-const setTeams = (teams: TchoukTeam[]) => {
-  sheet.teams = teams.map((t) => ({ id: t.id, name: t.name }));
-};
-
-// `teamId` is the team that benefits. With `givenBy`, an opponent conceded the
-// point: that opponent is the actor, the benefiting team is the target.
-const score = (teamId: TeamId, givenBy?: TeamId) => {
-  if (givenBy != null) {
-    recordEvent('score_point_given', {
-      actor: { teamId: givenBy },
-      target: { teamId },
-      scoreChange: { teamId, increment: 1 },
+  const recordEvent = (
+    type: TchoukEventType,
+    extra: Partial<TchoukEvent> = {},
+  ) => {
+    sheet.events.push({
+      type,
+      at: new Date().toISOString(),
+      ...extra,
     });
-  } else {
-    recordEvent('score_point_scored', {
-      actor: { teamId },
-      target: { teamId },
-      scoreChange: { teamId, increment: 1 },
-    });
-  }
-};
+  };
 
-// A cancelled point has only a target (the team losing the point), no actor.
-const correct = (teamId: TeamId) => {
-  if ((scores.value[teamId] ?? 0) > 0) {
-    recordEvent('score_point_correction', {
-      target: { teamId },
-      scoreChange: { teamId, increment: -1 },
-    });
-  }
-};
+  const removeEvent = (index: number) => {
+    if (index >= 0 && index < sheet.events.length) sheet.events.splice(index, 1);
+  };
 
-// Time / phase transitions. The UI only surfaces the ones valid for the
-// current phase (see PeriodTracker), but the store stays agnostic.
-const startGame = () => recordEvent('time_game_start');
-const startPeriod = () => recordEvent('time_period_start');
-const endPeriod = () => recordEvent('time_period_end');
-const endMatch = () => recordEvent('time_game_end');
+  const setTeams = (teams: TchoukTeam[]) => {
+    sheet.teams = teams.map((t) => ({ id: t.id, name: t.name }));
+  };
 
-const reset = () => {
-  sheet.events = [];
-};
+  // `teamId` is the team that benefits. With `givenBy`, an opponent conceded the
+  // point: that opponent is the actor, the benefiting team is the target.
+  const score = (teamId: TeamId, givenBy?: TeamId) => {
+    if (givenBy != null) {
+      recordEvent('score_point_given', {
+        actor: { teamId: givenBy },
+        target: { teamId },
+        scoreChange: { teamId, increment: 1 },
+      });
+    } else {
+      recordEvent('score_point_scored', {
+        actor: { teamId },
+        target: { teamId },
+        scoreChange: { teamId, increment: 1 },
+      });
+    }
+  };
 
-export function useMatchStore() {
+  // A cancelled point has only a target (the team losing the point), no actor.
+  const correct = (teamId: TeamId) => {
+    if ((scores.value[teamId] ?? 0) > 0) {
+      recordEvent('score_point_correction', {
+        target: { teamId },
+        scoreChange: { teamId, increment: -1 },
+      });
+    }
+  };
+
+  // Time / phase transitions. The UI only surfaces the ones valid for the
+  // current phase (see PeriodTracker), but the store stays agnostic.
+  const startGame = () => recordEvent('time_game_start');
+  const startPeriod = () => recordEvent('time_period_start');
+  const endPeriod = () => recordEvent('time_period_end');
+  const endMatch = () => recordEvent('time_game_end');
+
+  const reset = () => {
+    sheet.events = [];
+  };
+
   return {
     // single source of truth
     sheet,
@@ -141,4 +150,17 @@ export function useMatchStore() {
     endMatch,
     reset,
   };
+}
+
+/**
+ * Access the store for a specific match. `matchKey` scopes both the in-memory
+ * instance and its localStorage entry — typically `"<platformSlug>:<matchId>"`.
+ */
+export function useMatchStore(matchKey: string) {
+  let store = stores.get(matchKey);
+  if (!store) {
+    store = createMatchStore(matchKey);
+    stores.set(matchKey, store);
+  }
+  return store;
 }

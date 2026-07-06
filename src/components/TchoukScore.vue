@@ -10,6 +10,8 @@ import type { TchoukTeam, GameSheet } from '../types';
 
 const props = defineProps<{
   teams: TchoukTeam[];
+  /** Scopes the match state/storage — usually `"<platformSlug>:<matchId>"`. */
+  matchKey: string;
 }>();
 
 const emit = defineEmits<{
@@ -18,7 +20,7 @@ const emit = defineEmits<{
 
 // All match state and calculations live in the store; this component is just
 // a view over the single source of truth (the sheet).
-const store = useMatchStore();
+const store = useMatchStore(props.matchKey);
 const { sheet, scores, phase, period, canScore, lastActionAt } = store;
 
 store.setTeams(props.teams);
