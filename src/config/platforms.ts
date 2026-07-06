@@ -21,7 +21,7 @@ export const platforms: PlatformConfig[] = [
   {
     slug: 'tchouknet',
     name: 'Tchouk.net',
-    exportUrl: 'https://data.tchouk.net/api/sheets/{CODE}/import',
+    exportUrl: 'https://data.tchouk.net/api/sheets/{CODE}/sync',
   },
     /*
   {
