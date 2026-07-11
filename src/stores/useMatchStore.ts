@@ -153,6 +153,30 @@ function createMatchStore(matchKey: string) {
 }
 
 /**
+ * Prepopulate a match with a sheet fetched from the platform, before its game
+ * center is opened. If the store is already live (the match was visited this
+ * session) its sheet is replaced in place; otherwise the sheet is written to
+ * localStorage so the store loads it when first created.
+ */
+export function seedSheet(matchKey: string, sheet: GameSheet) {
+  const teams = Array.isArray(sheet.teams)
+    ? sheet.teams.map((t) => ({ id: t.id, name: t.name }))
+    : [];
+  const events = Array.isArray(sheet.events) ? sheet.events : [];
+  const store = stores.get(matchKey);
+  if (store) {
+    store.sheet.teams = teams;
+    store.sheet.events = events;
+    return;
+  }
+  try {
+    localStorage.setItem(storageKey(matchKey), JSON.stringify({ teams, events }));
+  } catch {
+    // Storage unavailable — the fetched sheet just won't persist to disk.
+  }
+}
+
+/**
  * Access the store for a specific match. `matchKey` scopes both the in-memory
  * instance and its localStorage entry — typically `"<platformSlug>:<matchId>"`.
  */

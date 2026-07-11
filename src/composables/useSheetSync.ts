@@ -1,7 +1,29 @@
 import { ref } from 'vue';
+import type { GameSheet } from '../types';
 
 /** Where a sheet sync currently stands. */
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'failed';
+
+/**
+ * GET the sheet stored under an edition code from its export endpoint.
+ *
+ * Returns the sheet on success, or `null` when there is nothing to load for that
+ * code: any non-200 response, an unreachable server, or a body that isn't a
+ * valid sheet. Callers treat `null` as "no such sheet / incorrect code".
+ */
+export async function fetchSheet(url: string): Promise<GameSheet | null> {
+  try {
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (res.status !== 200) return null;
+    const data = await res.json();
+    if (Array.isArray(data?.teams) && Array.isArray(data?.events)) {
+      return { teams: data.teams, events: data.events };
+    }
+  } catch {
+    // Offline, or a body that isn't JSON — treat as no sheet.
+  }
+  return null;
+}
 
 /**
  * POST the sheet JSON to an export endpoint whenever it changes.

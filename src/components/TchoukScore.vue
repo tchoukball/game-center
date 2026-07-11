@@ -71,7 +71,6 @@ watch(
       @decrement="store.correct(team.id)"
     />
   </div>
-  <button class="reset" @click="store.reset" :disabled="!sheet.events.length">Reset</button>
   <EventLog :sheet="sheet" @delete="store.removeEvent" />
 </template>
 
@@ -81,19 +80,4 @@ watch(
   grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
   gap: 1rem;
 }
-.reset {
-  margin: 2rem auto 0;
-  display: block;
-  cursor: pointer;
-  border: 1px solid #64748b;
-  background: transparent;
-  color: #94a3b8;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: background 0.15s;
-}
-.reset:hover:not(:disabled) { background: #334155; }
-.reset:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watchEffect } from 'vue';
+import { ref, computed, watch, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
-import { findPlatform, platformName, platforms } from '../config/platforms';
+import { buildExportUrl, findPlatform, platformName, platforms } from '../config/platforms';
+import { fetchSheet } from '../composables/useSheetSync';
+import { seedSheet } from '../stores/useMatchStore';
 import QrScanner from '../components/QrScanner.vue';
 
 const props = defineProps<{ slug: string }>();
@@ -19,12 +21,31 @@ watchEffect(() => {
 
 const editionCode = ref('');
 const scanning = ref(false);
+const loading = ref(false);
+const error = ref('');
 
-// Enter an edition code, then open that match's game center.
-const submit = () => {
+// A fresh edit means the previous "incorrect code" verdict no longer applies.
+watch(editionCode, () => { error.value = ''; });
+
+// Look the code up on the platform first: fetch the existing sheet so the game
+// center opens prepopulated. A code with no sheet behind it is reported as
+// incorrect and we stay on this screen.
+const submit = async () => {
   const edition = editionCode.value.trim();
-  if (!edition || !platform.value) return;
-  router.push({ name: 'game-center', params: { slug: props.slug, edition } });
+  if (!edition || !platform.value || loading.value) return;
+  error.value = '';
+  loading.value = true;
+  try {
+    const sheet = await fetchSheet(buildExportUrl(platform.value, edition));
+    if (!sheet) {
+      error.value = 'That code doesn’t match an existing sheet. Check it and try again.';
+      return;
+    }
+    seedSheet(`${props.slug}:${edition}`, sheet);
+    router.push({ name: 'game-center', params: { slug: props.slug, edition } });
+  } finally {
+    loading.value = false;
+  }
 };
 
 // A scanned QR code becomes the edition code and submits immediately.
@@ -48,10 +69,13 @@ const onScan = (value: string) => {
         placeholder="e.g. 12345"
         autofocus
       />
-      <button type="submit" :disabled="!editionCode.trim()">Open match center</button>
-      <button type="button" class="scan" @click="scanning = true">
+      <button type="submit" :disabled="!editionCode.trim() || loading">
+        {{ loading ? 'Checking code…' : 'Open match center' }}
+      </button>
+      <button type="button" class="scan" :disabled="loading" @click="scanning = true">
         <span aria-hidden="true">⛶</span> Scan QR code
       </button>
+      <p v-if="error" class="error" role="alert">{{ error }}</p>
     </form>
     <RouterLink v-if="canChangePlatform" class="back" :to="{ name: 'home' }">← Change platform</RouterLink>
   </main>
@@ -109,6 +133,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   color: #e2e8f0;
 }
 .scan:hover:not(:disabled) { background: #0f172a; }
+.error {
+  margin: 0.25rem 0 0;
+  color: #f87171;
+  font-size: 0.85rem;
+}
 .back {
   display: block;
   text-align: center;

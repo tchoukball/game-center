@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import TchoukScore from '../components/TchoukScore.vue';
 import { findPlatform, platformName, buildExportUrl } from '../config/platforms';
 import { useSheetSync } from '../composables/useSheetSync';
+import { useMatchStore } from '../stores/useMatchStore';
 import type { TchoukTeam, GameSheet } from '../types';
 
 const props = defineProps<{ slug: string; edition: string }>();
@@ -25,16 +26,29 @@ const { status: syncStatus, sync } = useSheetSync(() =>
   platform.value ? buildExportUrl(platform.value, props.edition) : '',
 );
 
-const teams: TchoukTeam[] = [
+// Fallback teams for a brand-new match with no prepopulated sheet.
+const defaultTeams: TchoukTeam[] = [
   { id: 'italy', name: 'Italy' },
   { id: 'switzerland-m15-bejune', name: 'Switzerland M15 BEJUNE' },
 ];
+
+// Prefer the teams from a sheet prepopulated on the platform screen (or restored
+// from storage), falling back to the defaults for a match with no sheet yet.
+// Read once at mount: TchoukScore owns `sheet.teams` from here on, so keeping
+// this a stable snapshot avoids a teams -> setTeams -> teams reactive loop.
+const seededTeams = useMatchStore(matchKey.value).sheet.teams;
+const teams: TchoukTeam[] = seededTeams.length
+  ? seededTeams.map((t) => ({ id: t.id, name: t.name }))
+  : defaultTeams;
 
 const lastEvent = ref<GameSheet | null>(null);
 const onGameEventChange = (data: GameSheet) => {
   lastEvent.value = data;
   if (platform.value) sync(data);
 };
+
+// The raw sheet JSON is hidden by default; a footer toggle reveals it.
+const debug = ref(false);
 </script>
 
 <template>
@@ -68,7 +82,10 @@ const onGameEventChange = (data: GameSheet) => {
       :match-key="matchKey"
       @game-event-change="onGameEventChange"
     />
-    <pre v-if="lastEvent" class="debug">{{ JSON.stringify(lastEvent, null, 2) }}</pre>
+    <pre v-if="debug && lastEvent" class="debug">{{ JSON.stringify(lastEvent, null, 2) }}</pre>
+    <button type="button" class="debug-toggle" @click="debug = !debug">
+      {{ debug ? 'Hide debug' : 'Debug mode' }}
+    </button>
   </main>
 </template>
 
@@ -135,4 +152,15 @@ h1 {
   font-size: 0.8rem;
   overflow-x: auto;
 }
+.debug-toggle {
+  display: block;
+  margin: 2rem auto 0;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: #475569;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.debug-toggle:hover { color: #94a3b8; }
 </style>
