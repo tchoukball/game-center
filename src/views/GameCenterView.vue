@@ -2,6 +2,7 @@
 import { ref, computed, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import TchoukScore from '../components/TchoukScore.vue';
+import TchoukLogo from '../components/TchoukLogo.vue';
 import { findPlatform, platformName, buildExportUrl } from '../config/platforms';
 import { useSheetSync } from '../composables/useSheetSync';
 import { useMatchStore } from '../stores/useMatchStore';
@@ -36,27 +37,33 @@ const defaultTeams: TchoukTeam[] = [
 // from storage), falling back to the defaults for a match with no sheet yet.
 // Read once at mount: TchoukScore owns `sheet.teams` from here on, so keeping
 // this a stable snapshot avoids a teams -> setTeams -> teams reactive loop.
-const seededTeams = useMatchStore(matchKey.value).sheet.teams;
+const store = useMatchStore(matchKey.value);
+const seededTeams = store.sheet.teams;
 const teams: TchoukTeam[] = seededTeams.length
   ? seededTeams.map((t) => ({ id: t.id, name: t.name }))
   : defaultTeams;
 
-const lastEvent = ref<GameSheet | null>(null);
 const onGameEventChange = (data: GameSheet) => {
-  lastEvent.value = data;
   if (platform.value) sync(data);
 };
 
-// The raw sheet JSON is hidden by default; a footer toggle reveals it.
+// The raw sheet JSON is hidden by default; a footer toggle reveals it. It reads
+// the live sheet from the store so it renders even before the first change.
 const debug = ref(false);
 </script>
 
 <template>
   <main v-if="platform">
     <header class="match-head">
-      <RouterLink class="back" :to="{ name: 'platform', params: { slug } }">←</RouterLink>
       <div class="titles">
-        <h1>Game Center</h1>
+        <span
+          v-if="platform.logoSvg"
+          class="brand platform-logo"
+          v-html="platform.logoSvg"
+          :aria-label="platformName(platform)"
+          role="img"
+        />
+        <TchoukLogo v-else class="brand" height="1.75rem" />
         <p class="meta">{{ platformName(platform) }} · Edition {{ edition }}</p>
       </div>
       <div
@@ -82,10 +89,11 @@ const debug = ref(false);
       :match-key="matchKey"
       @game-event-change="onGameEventChange"
     />
-    <pre v-if="debug && lastEvent" class="debug">{{ JSON.stringify(lastEvent, null, 2) }}</pre>
+    <pre v-if="debug" class="debug">{{ JSON.stringify(store.sheet, null, 2) }}</pre>
     <button type="button" class="debug-toggle" @click="debug = !debug">
       {{ debug ? 'Hide debug' : 'Debug mode' }}
     </button>
+    <RouterLink class="back" :to="{ name: 'platform', params: { slug } }">←</RouterLink>
   </main>
 </template>
 
@@ -97,20 +105,31 @@ main { width: 100%; max-width: 720px; margin: 0 auto; }
   gap: 1rem;
   margin-bottom: 2rem;
 }
-.match-head > .titles { flex: 1; text-align: center; }
-h1 {
-  margin: 0;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
+.match-head > .titles { flex: 1; text-align: left; }
+.brand {
+  color: #1e293b;
 }
-.meta { margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.9rem; }
+.platform-logo {
+  display: block;
+}
+.platform-logo :deep(svg) {
+  height: auto;
+  width: auto;
+  max-height: 1.75rem;
+  max-width: 100%;
+  display: block;
+}
+.meta { margin: 0.25rem 0 0; color: #64748b; font-size: 0.9rem; }
 .back {
-  color: #94a3b8;
+  display: block;
+  width: fit-content;
+  margin: 2rem auto 0;
+  color: #64748b;
   text-decoration: none;
   font-size: 1.5rem;
   line-height: 1;
 }
-.back:hover { color: #e2e8f0; }
+.back:hover { color: #1e293b; }
 .sync {
   width: 1.75rem;
   height: 1.75rem;
@@ -123,7 +142,7 @@ h1 {
   flex-shrink: 0;
 }
 .sync.idle { color: #64748b; }
-.sync.syncing { color: #60a5fa; }
+.sync.syncing { color: #f47b23; }
 .sync.synced {
   color: #22c55e;
   background: rgba(34, 197, 94, 0.12);
@@ -146,8 +165,8 @@ h1 {
 .debug {
   margin-top: 2rem;
   padding: 1rem;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 0.8rem;
   overflow-x: auto;
@@ -158,9 +177,9 @@ h1 {
   padding: 0.35rem 0.75rem;
   background: transparent;
   border: none;
-  color: #475569;
+  color: #cbd5e1;
   font-size: 0.75rem;
   cursor: pointer;
 }
-.debug-toggle:hover { color: #94a3b8; }
+.debug-toggle:hover { color: #64748b; }
 </style>

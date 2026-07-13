@@ -63,8 +63,8 @@ const requestDecrement = async () => {
 
 <style scoped>
 .team {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1.5rem;
   text-align: center;
@@ -74,26 +74,26 @@ const requestDecrement = async () => {
 .team h2 {
   margin: 0 0 1rem;
   font-size: 1.1rem;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 button {
   cursor: pointer;
-  border: 1px solid #475569;
-  background: #334155;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  background: #e2e8f0;
+  color: #1e293b;
   padding: 0.55rem 1rem;
   border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 600;
   transition: background 0.15s;
 }
-button:hover:not(:disabled) { background: #475569; }
+button:hover:not(:disabled) { background: #cbd5e1; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 .big-plus {
-  background: #0ea5e9;
-  border-color: #0284c7;
+  background: #f47b23;
+  border-color: #d9641a;
   color: #f0f9ff;
   font-size: 2.75rem;
   font-weight: 700;
@@ -101,11 +101,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   padding: 1.5rem 1rem;
   margin-bottom: 1rem;
 }
-.big-plus:hover:not(:disabled) { background: #0284c7; }
+.big-plus:hover:not(:disabled) { background: #d9641a; }
 .opponents {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #334155;
+  border-top: 1px solid #e2e8f0;
 }
 .opponent-rows {
   list-style: none;
@@ -120,12 +120,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
-  background: #0ea5e9;
-  border-color: #0284c7;
+  background: #f47b23;
+  border-color: #d9641a;
   color: #f0f9ff;
   padding: 0.5rem 0.7rem;
 }
-.plus-one:hover:not(:disabled) { background: #0284c7; }
+.plus-one:hover:not(:disabled) { background: #d9641a; }
 .given-label {
   font-size: 0.7rem;
   font-weight: 600;
@@ -143,8 +143,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   background: transparent;
-  border-color: #475569;
-  color: #94a3b8;
+  border-color: #cbd5e1;
+  color: #64748b;
 }
-.undo:hover:not(:disabled) { background: #334155; }
+.undo:hover:not(:disabled) { background: #e2e8f0; }
 </style>

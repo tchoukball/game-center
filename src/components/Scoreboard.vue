@@ -31,8 +31,8 @@ const scores = computed(() => computeScores(props.sheet.events));
   align-items: center;
   gap: 0.5rem;
   padding: 1.25rem 1rem;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
 .name {
@@ -40,7 +40,7 @@ const scores = computed(() => computeScores(props.sheet.events));
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: #64748b;
   text-align: center;
 }
 .score {
@@ -48,6 +48,6 @@ const scores = computed(() => computeScores(props.sheet.events));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: #e2e8f0;
+  color: #1e293b;
 }
 </style>

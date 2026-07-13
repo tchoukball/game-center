@@ -88,23 +88,30 @@ const dismiss = () => {
 
 <style scoped>
 .idle-alert {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 50;
+  width: calc(100% - 2rem);
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: #422006;
-  border: 1px solid #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
   border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
 }
 .message {
   margin: 0;
   font-size: 0.95rem;
-  color: #fed7aa;
+  color: #92400e;
 }
 .message strong {
   font-variant-numeric: tabular-nums;
-  color: #fef3c7;
+  color: #78350f;
 }
 .actions {
   display: flex;
@@ -113,22 +120,22 @@ const dismiss = () => {
 }
 button {
   cursor: pointer;
-  border: 1px solid #475569;
-  background: #334155;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  background: #e2e8f0;
+  color: #1e293b;
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 600;
   transition: background 0.15s;
 }
-button:hover { background: #475569; }
+button:hover { background: #cbd5e1; }
 .primary {
-  background: #0ea5e9;
-  border-color: #0284c7;
+  background: #f47b23;
+  border-color: #d9641a;
   color: #f0f9ff;
 }
-.primary:hover { background: #0284c7; }
+.primary:hover { background: #d9641a; }
 .danger {
   background: #dc2626;
   border-color: #b91c1c;
@@ -137,16 +144,17 @@ button:hover { background: #475569; }
 .danger:hover { background: #b91c1c; }
 .ghost {
   background: transparent;
-  color: #fdba74;
-  border-color: #b45309;
+  color: #b45309;
+  border-color: #fcd34d;
 }
 .ghost:hover { background: rgba(180, 83, 9, 0.2); }
 .alert-fade-enter-active,
 .alert-fade-leave-active {
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.2s;
 }
 .alert-fade-enter-from,
 .alert-fade-leave-to {
   opacity: 0;
+  transform: translateX(-50%) translateY(1rem);
 }
 </style>

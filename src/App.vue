@@ -52,11 +52,16 @@ onBeforeUnmount(() => {
 
 <style>
 * { box-sizing: border-box; }
+:root { accent-color: #f47b23; }
+:focus-visible {
+  outline: 2px solid #f47b23;
+  outline-offset: 2px;
+}
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #f1f5f9;
+  color: #1e293b;
   min-height: 100vh;
   display: flex;
   align-items: center;

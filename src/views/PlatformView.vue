@@ -5,6 +5,7 @@ import { buildExportUrl, findPlatform, platformName, platforms } from '../config
 import { fetchSheet } from '../composables/useSheetSync';
 import { seedSheet } from '../stores/useMatchStore';
 import QrScanner from '../components/QrScanner.vue';
+import TchoukLogo from '../components/TchoukLogo.vue';
 
 const props = defineProps<{ slug: string }>();
 
@@ -58,6 +59,14 @@ const onScan = (value: string) => {
 
 <template>
   <main v-if="platform">
+    <span
+      v-if="platform.logoSvg"
+      class="brand platform-logo"
+      v-html="platform.logoSvg"
+      :aria-label="platformName(platform)"
+      role="img"
+    />
+    <TchoukLogo v-else class="brand" height="2.5rem" />
     <h1>{{ platformName(platform) }}</h1>
     <form class="card" @submit.prevent="submit">
       <label for="edition-code">Edition code</label>
@@ -84,29 +93,46 @@ const onScan = (value: string) => {
 
 <style scoped>
 main { width: 100%; max-width: 480px; margin: 0 auto; }
+.brand {
+  color: #1e293b;
+  margin: 0 auto 1.25rem;
+}
+.platform-logo {
+  display: block;
+}
+.platform-logo :deep(svg) {
+  height: auto;
+  width: auto;
+  max-height: 2.5rem;
+  max-width: 50%;
+  display: block;
+  margin: 0 auto;
+}
 h1 {
   text-align: center;
   margin: 0 0 2rem;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: -0.01em;
 }
 .card {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1.5rem;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
-label { font-size: 0.85rem; font-weight: 600; color: #94a3b8; }
+label { font-size: 0.85rem; font-weight: 600; color: #64748b; }
 input {
   padding: 0.75rem;
   font-size: 1rem;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  color: #1e293b;
 }
 button {
   margin-top: 0.5rem;
@@ -116,11 +142,11 @@ button {
   cursor: pointer;
   border: none;
   border-radius: 8px;
-  background: #2563eb;
+  background: #f47b23;
   color: #fff;
   transition: background 0.15s;
 }
-button:hover:not(:disabled) { background: #1d4ed8; }
+button:hover:not(:disabled) { background: #d9641a; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 .scan {
   margin-top: 0;
@@ -129,22 +155,22 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   justify-content: center;
   gap: 0.5rem;
   background: transparent;
-  border: 1px solid #475569;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
 }
-.scan:hover:not(:disabled) { background: #0f172a; }
+.scan:hover:not(:disabled) { background: #f1f5f9; }
 .error {
   margin: 0.25rem 0 0;
-  color: #f87171;
+  color: #dc2626;
   font-size: 0.85rem;
 }
 .back {
   display: block;
   text-align: center;
   margin-top: 1.25rem;
-  color: #94a3b8;
+  color: #64748b;
   text-decoration: none;
   font-size: 0.9rem;
 }
-.back:hover { color: #e2e8f0; }
+.back:hover { color: #1e293b; }
 </style>

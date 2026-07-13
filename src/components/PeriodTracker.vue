@@ -77,18 +77,18 @@ const status = computed(() => {
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   margin-bottom: 1.5rem;
 }
 .period.idle {
-  border-color: #475569;
-  background: #0f172a;
+  border-color: #cbd5e1;
+  background: #f1f5f9;
 }
 .period.running {
-  border-color: #15803d;
-  background: #052e16;
+  border-color: #86efac;
+  background: #dcfce7;
 }
 .label {
   display: flex;
@@ -109,7 +109,7 @@ const status = computed(() => {
   font-size: 1.6rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #e2e8f0;
+  color: #1e293b;
 }
 .pulse {
   width: 0.7rem;
@@ -144,25 +144,25 @@ const status = computed(() => {
 }
 button {
   cursor: pointer;
-  border: 1px solid #475569;
-  background: #334155;
-  color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  background: #e2e8f0;
+  color: #1e293b;
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 600;
   transition: background 0.15s;
 }
-button:hover:not(:disabled) { background: #475569; }
+button:hover:not(:disabled) { background: #cbd5e1; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 .primary {
-  background: #0ea5e9;
-  border-color: #0284c7;
+  background: #f47b23;
+  border-color: #d9641a;
   color: #f0f9ff;
 }
-.primary:hover { background: #0284c7; }
+.primary:hover { background: #d9641a; }
 .secondary {
   background: transparent;
-  color: #94a3b8;
+  color: #64748b;
 }
 </style>

@@ -51,12 +51,6 @@ watch(
     @end-period="store.endPeriod"
     @end-match="store.endMatch"
   />
-  <LastActionTimer
-    :since="lastActionAt"
-    :active="canScore"
-    @end-period="store.endPeriod"
-    @end-match="store.endMatch"
-  />
   <Scoreboard :sheet="sheet" />
   <div class="scoreboard" :style="{ '--cols': sheet.teams.length }">
     <TeamColumn
@@ -71,6 +65,12 @@ watch(
       @decrement="store.correct(team.id)"
     />
   </div>
+  <LastActionTimer
+    :since="lastActionAt"
+    :active="canScore"
+    @end-period="store.endPeriod"
+    @end-match="store.endMatch"
+  />
   <EventLog :sheet="sheet" @delete="store.removeEvent" />
 </template>
 

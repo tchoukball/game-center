@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { platforms, platformName } from '../config/platforms';
+import TchoukLogo from '../components/TchoukLogo.vue';
 
 const router = useRouter();
 const slug = ref(platforms[0]?.slug ?? '');
@@ -21,7 +22,7 @@ const submit = () => {
 
 <template>
   <main>
-    <h1>Game Center</h1>
+    <TchoukLogo class="brand" height="2.5rem" />
     <form class="card" @submit.prevent="submit">
       <label for="platform">Platform</label>
       <select id="platform" v-model="slug">
@@ -36,29 +37,27 @@ const submit = () => {
 
 <style scoped>
 main { width: 100%; max-width: 480px; margin: 0 auto; }
-h1 {
-  text-align: center;
-  margin: 0 0 2rem;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
+.brand {
+  color: #1e293b;
+  margin: 0 auto 2rem;
 }
 .card {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   padding: 1.5rem;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
-label { font-size: 0.85rem; font-weight: 600; color: #94a3b8; }
+label { font-size: 0.85rem; font-weight: 600; color: #64748b; }
 select {
   padding: 0.75rem;
   font-size: 1rem;
   border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  color: #1e293b;
 }
 button {
   margin-top: 0.5rem;
@@ -68,10 +67,10 @@ button {
   cursor: pointer;
   border: none;
   border-radius: 8px;
-  background: #2563eb;
+  background: #f47b23;
   color: #fff;
   transition: background 0.15s;
 }
-button:hover:not(:disabled) { background: #1d4ed8; }
+button:hover:not(:disabled) { background: #d9641a; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

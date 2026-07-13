@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'Game Center',
         short_name: 'Game Center',
         description: 'Offline tchoukball scoreboard',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#f1f5f9',
+        background_color: '#f1f5f9',
         display: 'standalone',
         start_url: '/',
         icons: [

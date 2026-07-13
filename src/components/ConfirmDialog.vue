@@ -49,8 +49,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 .confirm-dialog {
   width: 100%;
   max-width: 360px;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
@@ -59,7 +59,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
   margin: 0 0 1.25rem;
   font-size: 1rem;
   line-height: 1.4;
-  color: #e2e8f0;
+  color: #1e293b;
 }
 .confirm-actions {
   display: flex;
@@ -68,7 +68,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 }
 button {
   cursor: pointer;
-  border: 1px solid #475569;
+  border: 1px solid #cbd5e1;
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-size: 0.9rem;
@@ -77,9 +77,9 @@ button {
 }
 .cancel {
   background: transparent;
-  color: #94a3b8;
+  color: #64748b;
 }
-.cancel:hover { background: #334155; }
+.cancel:hover { background: #e2e8f0; }
 .accept {
   background: #dc2626;
   border-color: #b91c1c;

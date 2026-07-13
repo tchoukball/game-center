@@ -134,8 +134,8 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -143,15 +143,15 @@ th,
 td {
   padding: 0.5rem 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid #e2e8f0;
 }
 th {
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #94a3b8;
-  background: #0f172a;
+  color: #64748b;
+  background: #f1f5f9;
 }
 tbody tr:last-child td {
   border-bottom: none;
@@ -159,11 +159,11 @@ tbody tr:last-child td {
 .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
-  color: #94a3b8;
+  color: #64748b;
 }
 .time {
   font-variant-numeric: tabular-nums;
-  color: #cbd5e1;
+  color: #475569;
 }
 .detail {
   font-variant-numeric: tabular-nums;
@@ -179,16 +179,16 @@ td.actions {
   width: 1.6rem;
   height: 1.6rem;
   line-height: 1;
-  border: 1px solid #475569;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
   background: transparent;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 1.1rem;
   font-weight: 700;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .delete:hover {
-  background: #7f1d1d;
+  background: #dc2626;
   border-color: #b91c1c;
   color: #fee2e2;
 }

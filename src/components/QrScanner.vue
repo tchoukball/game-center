@@ -120,7 +120,7 @@ video {
 .reticle {
   position: absolute;
   inset: 12%;
-  border: 3px solid rgba(96, 165, 250, 0.9);
+  border: 3px solid rgba(255, 208, 28, 0.9);
   border-radius: 12px;
   box-shadow: 0 0 0 100vmax rgba(2, 6, 23, 0.35);
 }
