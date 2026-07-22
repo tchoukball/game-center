@@ -26,7 +26,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
       <div class="confirm-dialog" role="alertdialog" aria-modal="true">
         <p class="confirm-message">{{ state.message }}</p>
         <div class="confirm-actions">
-          <button class="cancel" @click="cancel">{{ state.cancelLabel }}</button>
+          <button v-if="!state.hideCancel" class="cancel" @click="cancel">{{ state.cancelLabel }}</button>
           <button class="accept" @click="accept" autofocus>{{ state.confirmLabel }}</button>
         </div>
       </div>

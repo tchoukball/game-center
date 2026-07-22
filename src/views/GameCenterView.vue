@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watchEffect } from 'vue';
+import { ref, shallowRef, computed, watch, watchEffect, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import TchoukScore from '../components/TchoukScore.vue';
 import TchoukLogo from '../components/TchoukLogo.vue';
 import { findPlatform, platformName, buildExportUrl } from '../config/platforms';
-import { useSheetSync } from '../composables/useSheetSync';
-import { useMatchStore } from '../stores/useMatchStore';
+import { useSheetSync, fetchSheet } from '../composables/useSheetSync';
+import { useConfirm } from '../composables/useConfirm';
+import { useMatchStore, peekSheet, seedSheet } from '../stores/useMatchStore';
 import type { TchoukTeam, GameSheet } from '../types';
 
 const props = defineProps<{ slug: string; edition: string }>();
@@ -27,21 +28,64 @@ const { status: syncStatus, sync } = useSheetSync(() =>
   platform.value ? buildExportUrl(platform.value, props.edition) : '',
 );
 
+// A failed sync means the match can no longer be reached on the platform. Tell
+// the user the match isn't available and send them back to the code screen.
+// The flag guards against the alert firing twice while we navigate away.
+const { alert } = useConfirm();
+let leaving = false;
+watch(syncStatus, async (status) => {
+  if (status !== 'failed' || leaving) return;
+  leaving = true;
+  await alert(
+    'This match is no longer available. Please re-enter the code to continue.',
+  );
+  router.replace({ name: 'platform', params: { slug: props.slug } });
+});
+
 // Fallback teams for a brand-new match with no prepopulated sheet.
 const defaultTeams: TchoukTeam[] = [
   { id: 'italy', name: 'Italy' },
   { id: 'switzerland-m15-bejune', name: 'Switzerland M15 BEJUNE' },
 ];
 
-// Prefer the teams from a sheet prepopulated on the platform screen (or restored
+// The match is only opened once its code is confirmed to exist on the platform
+// (see `verify` below), so `store` and `teams` stay null/empty until then.
+const store = shallowRef<ReturnType<typeof useMatchStore> | null>(null);
+
+// Teams come from the sheet prepopulated on the platform screen (or restored
 // from storage), falling back to the defaults for a match with no sheet yet.
-// Read once at mount: TchoukScore owns `sheet.teams` from here on, so keeping
-// this a stable snapshot avoids a teams -> setTeams -> teams reactive loop.
-const store = useMatchStore(matchKey.value);
-const seededTeams = store.sheet.teams;
-const teams: TchoukTeam[] = seededTeams.length
-  ? seededTeams.map((t) => ({ id: t.id, name: t.name }))
-  : defaultTeams;
+// Set once, when the match opens: TchoukScore owns `sheet.teams` from here on,
+// so keeping this a stable snapshot avoids a teams -> setTeams -> teams loop.
+const teams = shallowRef<TchoukTeam[]>([]);
+
+// Reaching the game center directly — a deep link, a bookmark, or a refresh —
+// skips the code form, so the code has never been checked against the platform.
+// Look it up here too: no sheet behind it means the code is invalid, so say so
+// and send the user back to the form rather than opening a match that can't sync.
+const verify = async () => {
+  if (!platform.value || leaving) return;
+  const sheet = await fetchSheet(buildExportUrl(platform.value, props.edition));
+  if (!sheet) {
+    leaving = true;
+    await alert(
+      `Edition code “${props.edition}” doesn’t match an existing match. ` +
+        'Please enter a valid code.',
+    );
+    router.replace({ name: 'platform', params: { slug: props.slug } });
+    return;
+  }
+  // Only seed from the platform when this device holds nothing for the match:
+  // an existing local sheet may be ahead of the synced one, and reconciling the
+  // two is the code form's job (it asks which version to open with).
+  if (!peekSheet(matchKey.value)) seedSheet(matchKey.value, sheet);
+  const opened = useMatchStore(matchKey.value);
+  teams.value = opened.sheet.teams.length
+    ? opened.sheet.teams.map((t) => ({ id: t.id, name: t.name }))
+    : defaultTeams;
+  store.value = opened;
+};
+
+onMounted(verify);
 
 const onGameEventChange = (data: GameSheet) => {
   if (platform.value) sync(data);
@@ -84,15 +128,18 @@ const debug = ref(false);
         <span v-else aria-hidden="true">•</span>
       </div>
     </header>
-    <TchoukScore
-      :teams="teams"
-      :match-key="matchKey"
-      @game-event-change="onGameEventChange"
-    />
-    <pre v-if="debug" class="debug">{{ JSON.stringify(store.sheet, null, 2) }}</pre>
-    <button type="button" class="debug-toggle" @click="debug = !debug">
-      {{ debug ? 'Hide debug' : 'Debug mode' }}
-    </button>
+    <template v-if="store">
+      <TchoukScore
+        :teams="teams"
+        :match-key="matchKey"
+        @game-event-change="onGameEventChange"
+      />
+      <pre v-if="debug" class="debug">{{ JSON.stringify(store.sheet, null, 2) }}</pre>
+      <button type="button" class="debug-toggle" @click="debug = !debug">
+        {{ debug ? 'Hide debug' : 'Debug mode' }}
+      </button>
+    </template>
+    <p v-else class="checking" role="status">Checking code…</p>
     <RouterLink class="back" :to="{ name: 'platform', params: { slug } }">←</RouterLink>
   </main>
 </template>
@@ -161,6 +208,12 @@ main { width: 100%; max-width: 720px; margin: 0 auto; }
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+.checking {
+  margin: 2rem 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 .debug {
   margin-top: 2rem;

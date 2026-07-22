@@ -177,6 +177,19 @@ export function seedSheet(matchKey: string, sheet: GameSheet) {
 }
 
 /**
+ * The sheet currently held for a match, without creating a live store: the
+ * in-memory sheet if the match is open this session, otherwise whatever is in
+ * localStorage. Returns null when nothing is stored (no teams and no events) —
+ * i.e. there is no local version to reconcile against a fetched one.
+ */
+export function peekSheet(matchKey: string): GameSheet | null {
+  const store = stores.get(matchKey);
+  const sheet = store ? store.sheet : loadSheet(matchKey);
+  if (sheet.teams.length === 0 && sheet.events.length === 0) return null;
+  return { teams: sheet.teams, events: sheet.events };
+}
+
+/**
  * Access the store for a specific match. `matchKey` scopes both the in-memory
  * instance and its localStorage entry — typically `"<platformSlug>:<matchId>"`.
  */
