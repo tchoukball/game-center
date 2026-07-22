@@ -3,7 +3,7 @@ import type { PlatformConfig } from '../config/platforms';
 import { fetchSheet } from './useSheetSync';
 import { matchKey, peekSheet, seedSheet } from '../stores/useMatchStore';
 import { useConfirm } from './useConfirm';
-import { computeScores } from '../types';
+import { computeScores, scoresByPeriod } from '../types';
 import type { GameSheet, TchoukScoresType } from '../types';
 
 /** What the user is told when a code has no match behind it, wherever they entered it. */
@@ -14,9 +14,28 @@ export const noSuchMatchMessage = (edition: string) =>
 // form and then landing on its game center only costs one round trip.
 const verified = new Set<string>();
 
-// A one-line "Italy 5 – Switzerland 3" summary of a sheet's scores.
-const formatScore = (sheet: GameSheet, scores: TchoukScoresType) =>
-  sheet.teams.map((t) => `${t.name} ${scores[t.id] ?? 0}`).join(' – ');
+// A version of the sheet, laid out like the scoresheet it is: the total first,
+// then a column per period, and a row per team in the order the teams are named
+// in the question. Reading down a column shows where the versions parted ways.
+//
+//   TOTAL  P1  P2  P3
+//      10   2   8   0
+//      12   3   7   2
+const versionTable = (sheet: GameSheet, scores: TchoukScoresType): string[][] => {
+  const periods = scoresByPeriod(sheet.events);
+  return [
+    ['Total', ...periods.map((_, i) => `P${i + 1}`)],
+    ...sheet.teams.map((team) => [
+      String(scores[team.id] ?? 0),
+      ...periods.map((period) => String(period[team.id] ?? 0)),
+    ]),
+  ];
+};
+
+// Total points on the sheet, both teams together — the version with more of
+// them has recorded the most, so it is the one to point the user at.
+const totalPoints = (scores: TchoukScoresType) =>
+  Object.values(scores).reduce((sum, n) => sum + n, 0);
 
 // Whether two score maps disagree on any team.
 const scoresDiffer = (a: TchoukScoresType, b: TchoukScoresType) => {
@@ -32,14 +51,14 @@ const scoresDiffer = (a: TchoukScoresType, b: TchoukScoresType) => {
  * every entry point reports with `noSuchMatchMessage`. Otherwise the fetched
  * sheet is seeded so the game center opens prepopulated, and true is resolved.
  *
- * A sheet already held on this device is never silently discarded: with
- * `reconcile`, a local version whose score disagrees with the synced one lets
- * the user pick which to open with; without it, the local version is kept.
+ * A sheet already held on this device is never silently discarded: when its
+ * score disagrees with the synced one, one of the two is stale and the user
+ * picks which to open with. This holds however the match was reached — typing
+ * the code, scanning it, or landing on the match URL directly.
  */
 export async function openMatch(
   platform: PlatformConfig,
   edition: string,
-  { reconcile = false }: { reconcile?: boolean } = {},
 ): Promise<boolean> {
   const key = matchKey(platform.slug, edition);
   if (verified.has(key)) return true;
@@ -50,15 +69,28 @@ export async function openMatch(
   const local = peekSheet(key);
   if (!local) {
     seedSheet(key, sheet);
-  } else if (reconcile) {
+  } else {
     const localScores = computeScores(local.events);
     const syncedScores = computeScores(sheet.events);
     const useSynced =
       !scoresDiffer(localScores, syncedScores) ||
       (await useConfirm().confirm(
-        `Scores differ for this match — this device shows ${formatScore(local, localScores)}, ` +
-          `the synced sheet shows ${formatScore(sheet, syncedScores)}. Which do you want to use?`,
-        { confirmLabel: 'Use synced sheet', cancelLabel: 'Keep this device' },
+        `${sheet.teams.map((t) => t.name).join(' vs ')} — this device and the synced sheet ` +
+          'disagree on the score. Which one do you want to keep?',
+        {
+          confirmLabel: 'Synced sheet',
+          confirmTable: versionTable(sheet, syncedScores),
+          cancelLabel: 'This device',
+          cancelTable: versionTable(local, localScores),
+          // Neither is knowably right, so point at the fuller one rather than
+          // at whichever button happens to be the default.
+          highlight:
+            totalPoints(syncedScores) > totalPoints(localScores)
+              ? 'confirm'
+              : totalPoints(localScores) > totalPoints(syncedScores)
+                ? 'cancel'
+                : undefined,
+        },
       ));
     // Keeping this device's version: leave storage untouched, just open it.
     if (useSynced) seedSheet(key, sheet);

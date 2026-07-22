@@ -93,6 +93,26 @@ export function computeScores(events: TchoukEvent[]): TchoukScoresType {
 }
 
 /**
+ * The same fold, but split per period: index 0 holds period 1's scores, and a
+ * period that has started with nothing scored yet is an empty map. Points
+ * recorded before any period started are ignored — the UI only allows scoring
+ * inside a period, so they would have no period to belong to.
+ */
+export function scoresByPeriod(events: TchoukEvent[]): TchoukScoresType[] {
+  const periods: TchoukScoresType[] = [];
+  for (const event of events) {
+    if (event.type === 'time_period_start') {
+      periods.push({});
+    } else if (event.scoreChange && periods.length) {
+      const { teamId, increment } = event.scoreChange;
+      const period = periods[periods.length - 1];
+      period[teamId] = (period[teamId] ?? 0) + increment;
+    }
+  }
+  return periods;
+}
+
+/**
  * The phase a match is in, derived from its `time_*` events. The allowed
  * transitions are:
  *   pregame        --time_game_start-->   game_started

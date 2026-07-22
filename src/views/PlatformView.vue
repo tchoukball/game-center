@@ -36,7 +36,7 @@ const submit = async () => {
   error.value = '';
   loading.value = true;
   try {
-    if (!(await openMatch(platform.value, edition, { reconcile: true }))) {
+    if (!(await openMatch(platform.value, edition))) {
       error.value = noSuchMatchMessage(edition);
       return;
     }

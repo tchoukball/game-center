@@ -65,8 +65,10 @@ const match = shallowRef<{
 
 // Reaching the game center directly — a deep link, a bookmark, or a refresh —
 // skips the code form, so the code may never have been checked against the
-// platform. Look it up here too (`openMatch` skips the round trip when the code
-// form just did) rather than opening a match that can't sync.
+// platform. Run the same lookup here rather than opening a match that can't
+// sync: an unknown code bounces to the form, and a stored sheet that disagrees
+// with the synced one asks which to open with. `openMatch` skips the round trip
+// when the code form just made it.
 onMounted(async () => {
   if (!platform.value) return;
   if (!(await openMatch(platform.value, props.edition))) {

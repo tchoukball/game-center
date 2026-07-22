@@ -10,6 +10,11 @@ export interface ConfirmState {
   message: string;
   confirmLabel: string;
   cancelLabel: string;
+  /** A small table under each button's label, when a choice needs explaining. */
+  confirmTable: string[][];
+  cancelTable: string[][];
+  /** Which option to mark as the stand-out one, if either. */
+  highlight: 'confirm' | 'cancel' | '';
   /** Hide the cancel button — a single-button acknowledgement (see `alert`). */
   hideCancel: boolean;
 }
@@ -17,6 +22,19 @@ export interface ConfirmState {
 export interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
+  /**
+   * What each option actually is, as a small table whose first row is the
+   * header. Supply these when the user is picking between two things rather
+   * than approving one: the dialog then stacks the buttons so each choice can
+   * be read before it is made.
+   */
+  confirmTable?: string[][];
+  cancelTable?: string[][];
+  /**
+   * Draw the eye to one of the two options — the caller decides which, since
+   * only it knows what makes an option stand out.
+   */
+  highlight?: 'confirm' | 'cancel';
   /** Drop the cancel button, leaving a single-button acknowledgement. */
   hideCancel?: boolean;
 }
@@ -26,6 +44,9 @@ const state = reactive<ConfirmState>({
   message: '',
   confirmLabel: 'Confirm',
   cancelLabel: 'Cancel',
+  confirmTable: [],
+  cancelTable: [],
+  highlight: '',
   hideCancel: false,
 });
 
@@ -41,6 +62,9 @@ function confirm(message: string, options: ConfirmOptions = {}): Promise<boolean
   state.message = message;
   state.confirmLabel = options.confirmLabel ?? 'Confirm';
   state.cancelLabel = options.cancelLabel ?? 'Cancel';
+  state.confirmTable = options.confirmTable ?? [];
+  state.cancelTable = options.cancelTable ?? [];
+  state.highlight = options.highlight ?? '';
   state.hideCancel = options.hideCancel ?? false;
   state.open = true;
   return new Promise((resolve) => {
