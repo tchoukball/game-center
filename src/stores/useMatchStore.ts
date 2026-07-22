@@ -20,6 +20,12 @@ const STORAGE_PREFIX = 'tchoukscorer:sheet:v1';
 
 const storageKey = (matchKey: string) => `${STORAGE_PREFIX}:${matchKey}`;
 
+/**
+ * The key scoping one match's store and localStorage entry. Every caller builds
+ * it through here so the two ends of a navigation always agree on the key.
+ */
+export const matchKey = (slug: string, edition: string) => `${slug}:${edition}`;
+
 const loadSheet = (matchKey: string): GameSheet => {
   try {
     const raw = localStorage.getItem(storageKey(matchKey));
@@ -180,13 +186,14 @@ export function seedSheet(matchKey: string, sheet: GameSheet) {
  * The sheet currently held for a match, without creating a live store: the
  * in-memory sheet if the match is open this session, otherwise whatever is in
  * localStorage. Returns null when nothing is stored (no teams and no events) —
- * i.e. there is no local version to reconcile against a fetched one.
+ * i.e. there is no local version to reconcile against a fetched one. The sheet
+ * is the live one when the match is open, so treat it as read-only.
  */
-export function peekSheet(matchKey: string): GameSheet | null {
-  const store = stores.get(matchKey);
-  const sheet = store ? store.sheet : loadSheet(matchKey);
+export function peekSheet(key: string): GameSheet | null {
+  const store = stores.get(key);
+  const sheet = store ? store.sheet : loadSheet(key);
   if (sheet.teams.length === 0 && sheet.events.length === 0) return null;
-  return { teams: sheet.teams, events: sheet.events };
+  return sheet;
 }
 
 /**

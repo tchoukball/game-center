@@ -17,6 +17,8 @@ export interface ConfirmState {
 export interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
+  /** Drop the cancel button, leaving a single-button acknowledgement. */
+  hideCancel?: boolean;
 }
 
 const state = reactive<ConfirmState>({
@@ -39,7 +41,7 @@ function confirm(message: string, options: ConfirmOptions = {}): Promise<boolean
   state.message = message;
   state.confirmLabel = options.confirmLabel ?? 'Confirm';
   state.cancelLabel = options.cancelLabel ?? 'Cancel';
-  state.hideCancel = false;
+  state.hideCancel = options.hideCancel ?? false;
   state.open = true;
   return new Promise((resolve) => {
     resolver = resolve;
@@ -51,14 +53,7 @@ function confirm(message: string, options: ConfirmOptions = {}): Promise<boolean
  * used to inform the user of something they can only accept, not decline.
  */
 function alert(message: string, confirmLabel = 'OK'): Promise<void> {
-  if (resolver) settle(false);
-  state.message = message;
-  state.confirmLabel = confirmLabel;
-  state.hideCancel = true;
-  state.open = true;
-  return new Promise((resolve) => {
-    resolver = () => resolve();
-  });
+  return confirm(message, { confirmLabel, hideCancel: true }).then(() => {});
 }
 
 function settle(result: boolean): void {
@@ -81,9 +76,7 @@ export function useConfirm(): {
     state: readonly(state),
     confirm,
     alert,
-    // A single-button alert has no cancel, so dismissing it (Escape / backdrop)
-    // resolves the same way as accepting.
     accept: () => settle(true),
-    cancel: () => settle(state.hideCancel),
+    cancel: () => settle(false),
   };
 }

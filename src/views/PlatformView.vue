@@ -1,35 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
-import { buildExportUrl, findPlatform, platformName, platforms } from '../config/platforms';
-import { fetchSheet } from '../composables/useSheetSync';
-import { peekSheet, seedSheet } from '../stores/useMatchStore';
-import { useConfirm } from '../composables/useConfirm';
-import { computeScores } from '../types';
-import type { GameSheet } from '../types';
+import { findPlatform, platformName, platforms } from '../config/platforms';
+import { openMatch, noSuchMatchMessage } from '../composables/openMatch';
 import QrScanner from '../components/QrScanner.vue';
 import TchoukLogo from '../components/TchoukLogo.vue';
 
 const props = defineProps<{ slug: string }>();
 
 const router = useRouter();
-const { confirm } = useConfirm();
 const platform = computed(() => findPlatform(props.slug));
-
-// A one-line "Italy 5 – 3 Switzerland" summary of a sheet's current scores.
-const formatScore = (sheet: GameSheet) => {
-  const scores = computeScores(sheet.events);
-  return sheet.teams.map((t) => `${t.name} ${scores[t.id] ?? 0}`).join(' – ');
-};
-
-// Whether two sheets disagree on any team's score.
-const scoresDiffer = (a: GameSheet, b: GameSheet) => {
-  const sa = computeScores(a.events);
-  const sb = computeScores(b.events);
-  const ids = new Set([...Object.keys(sa), ...Object.keys(sb)]);
-  for (const id of ids) if ((sa[id] ?? 0) !== (sb[id] ?? 0)) return true;
-  return false;
-};
 
 // Only worth offering "change platform" when there is more than one to pick.
 const canChangePlatform = platforms.length > 1;
@@ -47,83 +27,55 @@ const error = ref('');
 // A fresh edit means the previous "incorrect code" verdict no longer applies.
 watch(editionCode, () => { error.value = ''; });
 
-// Look the code up on the platform first: fetch the existing sheet so the game
-// center opens prepopulated. A code with no sheet behind it is reported as
-// incorrect and we stay on this screen.
+// Look the code up on the platform first, so the game center opens prepopulated
+// (and asks which version to use when this device disagrees with the synced
+// sheet). A code with no sheet behind it is reported as incorrect right here.
 const submit = async () => {
   const edition = editionCode.value.trim();
   if (!edition || !platform.value || loading.value) return;
   error.value = '';
   loading.value = true;
   try {
-    const sheet = await fetchSheet(buildExportUrl(platform.value, edition));
-    if (!sheet) {
-      error.value = 'That code doesn’t match an existing match. Check it and try again.';
+    if (!(await openMatch(platform.value, edition, { reconcile: true }))) {
+      error.value = noSuchMatchMessage(edition);
       return;
     }
-    const matchKey = `${props.slug}:${edition}`;
-    // A saved version on this device whose score disagrees with the synced sheet
-    // means one of them is stale — let the user choose which to open with.
-    const local = peekSheet(matchKey);
-    if (local && scoresDiffer(local, sheet)) {
-      const useSynced = await confirm(
-        `Scores differ for this match — this device shows ${formatScore(local)}, ` +
-          `the synced sheet shows ${formatScore(sheet)}. Which do you want to use?`,
-        { confirmLabel: 'Use synced sheet', cancelLabel: 'Keep this device' },
-      );
-      // Keeping this device's version: leave storage untouched, just open it.
-      if (!useSynced) {
-        router.push({ name: 'game-center', params: { slug: props.slug, edition } });
-        return;
-      }
-    }
-    seedSheet(matchKey, sheet);
     router.push({ name: 'game-center', params: { slug: props.slug, edition } });
   } finally {
     loading.value = false;
   }
 };
 
-// What a QR payload may hold, beyond a bare edition code.
-const URL_PAYLOAD = /^https?:\/\//i;
 // A code is plain enough to drop into a URL as-is: letters, digits, _ - and .
-const CODE_PAYLOAD = /^[A-Za-z0-9_.-]+$/;
+const EDITION_CODE = /^[A-Za-z0-9_.-]+$/;
 
-/**
- * Act on a scanned QR code.
- *
- * A payload that is a URL is followed: an address on this app is routed to
- * in-place (no reload mid-match), anything else leaves for that site. A payload
- * that reads as a bare edition code becomes the code and submits immediately.
- * Anything else isn't something this scanner can act on, so we say so.
- */
+// Act on a scanned QR code: follow a web link, or take a bare edition code and
+// submit it. Anything else isn't something this scanner can act on.
 const onScan = (value: string) => {
   scanning.value = false;
   const payload = value.trim();
 
-  if (URL_PAYLOAD.test(payload)) {
-    let url: URL;
-    try {
-      url = new URL(payload);
-    } catch {
-      error.value = 'That QR code isn’t a valid link.';
-      return;
-    }
+  let url: URL | null = null;
+  try {
+    url = new URL(payload);
+  } catch {
+    // Not a URL — falls through to the edition-code branch.
+  }
+
+  if (url?.protocol === 'http:' || url?.protocol === 'https:') {
+    // An address on this app is routed to in-place, so we don't reload
+    // mid-match; anything else leaves for that site.
     if (url.origin === window.location.origin) {
       router.push(url.pathname + url.search + url.hash);
     } else {
       window.location.href = url.href;
     }
-    return;
-  }
-
-  if (CODE_PAYLOAD.test(payload)) {
+  } else if (EDITION_CODE.test(payload)) {
     editionCode.value = payload;
     submit();
-    return;
+  } else {
+    error.value = 'That QR code doesn’t hold a match link or an edition code.';
   }
-
-  error.value = 'That QR code doesn’t hold a match link or an edition code.';
 };
 </script>
 
