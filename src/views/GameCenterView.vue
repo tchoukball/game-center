@@ -103,7 +103,7 @@ const debug = ref(false);
           role="img"
         />
         <TchoukLogo v-else class="brand" height="1.75rem" />
-        <p class="meta">{{ platformName(platform) }} · Game: {{ edition }}</p>
+        <p class="meta">Game: {{ edition }}</p>
       </div>
       <div
         class="sync"
