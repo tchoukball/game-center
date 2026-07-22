@@ -51,8 +51,8 @@ watch(
     @end-period="store.endPeriod"
     @end-match="store.endMatch"
   />
-  <Scoreboard :sheet="sheet" />
-  <div class="scoreboard" :style="{ '--cols': sheet.teams.length }">
+  <Scoreboard class="scores" :sheet="sheet" />
+  <div class="team-columns" :style="{ '--cols': sheet.teams.length }">
     <TeamColumn
       v-for="team in sheet.teams"
       :key="team.id"
@@ -75,9 +75,13 @@ watch(
 </template>
 
 <style scoped>
-.scoreboard {
+/* The score is what the room reads; the columns below it are what the scorer
+   presses. Keep them apart so the two are never mistaken for one block. */
+.scores { margin: 1.5rem 0 2rem; }
+.team-columns {
   display: grid;
   grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
   gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 </style>
