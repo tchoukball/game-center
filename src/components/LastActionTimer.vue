@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 
-const IDLE_ALERT_MS = 5000;
+const IDLE_ALERT_MS = 20*1000;
 
 const props = withDefaults(
   defineProps<{
