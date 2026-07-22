@@ -84,11 +84,46 @@ const submit = async () => {
   }
 };
 
-// A scanned QR code becomes the edition code and submits immediately.
+// What a QR payload may hold, beyond a bare edition code.
+const URL_PAYLOAD = /^https?:\/\//i;
+// A code is plain enough to drop into a URL as-is: letters, digits, _ - and .
+const CODE_PAYLOAD = /^[A-Za-z0-9_.-]+$/;
+
+/**
+ * Act on a scanned QR code.
+ *
+ * A payload that is a URL is followed: an address on this app is routed to
+ * in-place (no reload mid-match), anything else leaves for that site. A payload
+ * that reads as a bare edition code becomes the code and submits immediately.
+ * Anything else isn't something this scanner can act on, so we say so.
+ */
 const onScan = (value: string) => {
   scanning.value = false;
-  editionCode.value = value.trim();
-  submit();
+  const payload = value.trim();
+
+  if (URL_PAYLOAD.test(payload)) {
+    let url: URL;
+    try {
+      url = new URL(payload);
+    } catch {
+      error.value = 'That QR code isn’t a valid link.';
+      return;
+    }
+    if (url.origin === window.location.origin) {
+      router.push(url.pathname + url.search + url.hash);
+    } else {
+      window.location.href = url.href;
+    }
+    return;
+  }
+
+  if (CODE_PAYLOAD.test(payload)) {
+    editionCode.value = payload;
+    submit();
+    return;
+  }
+
+  error.value = 'That QR code doesn’t hold a match link or an edition code.';
 };
 </script>
 
