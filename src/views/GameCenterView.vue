@@ -25,7 +25,13 @@ const matchKey = computed(() => buildMatchKey(props.slug, props.edition));
 
 // Push the sheet to the platform's export endpoint whenever it changes. The URL
 // is built lazily so `{CODE}` is filled with this match's edition code.
-const { status: syncStatus, sync } = useSheetSync(() =>
+const {
+  status: syncStatus,
+  unsent: syncUnsent,
+  retryIn: syncRetryIn,
+  sync,
+  sendNow,
+} = useSheetSync(() =>
   platform.value ? buildExportUrl(platform.value, props.edition) : '',
 );
 
@@ -40,9 +46,12 @@ const leaveToCodeScreen = async (message: string) => {
   router.replace({ name: 'platform', params: { slug: props.slug } });
 };
 
-// A failed sync means the match can no longer be reached on the platform.
+// The platform saying the match isn't there any more is final — scoring into it
+// can't continue. A send that merely didn't get through is not: it retries in
+// the background (see the banner), and the sheet is safe on this device
+// meanwhile, so the match keeps going.
 watch(syncStatus, (status) => {
-  if (status === 'failed') {
+  if (status === 'gone') {
     leaveToCodeScreen('This match is no longer available. Please re-enter the code to continue.');
   }
 });
@@ -130,17 +139,30 @@ const toggleSafeMode = async () => {
           idle: 'Waiting for changes',
           syncing: 'Syncing…',
           synced: 'Synced',
-          failed: 'Sync failed',
+          failed: 'Sync failed — retrying',
+          gone: 'Match no longer available',
         }[syncStatus]"
         role="status"
         aria-live="polite"
       >
         <span v-if="syncStatus === 'syncing'" class="spinner" aria-hidden="true" />
         <span v-else-if="syncStatus === 'synced'" aria-hidden="true">✓</span>
-        <span v-else-if="syncStatus === 'failed'" aria-hidden="true">✕</span>
+        <span v-else-if="syncStatus === 'failed' || syncStatus === 'gone'" aria-hidden="true">✕</span>
         <span v-else aria-hidden="true">•</span>
       </div>
     </header>
+    <div v-if="syncUnsent" class="unsent" role="status" aria-live="polite">
+      <p>
+        <strong>Not saved to {{ platformName(platform) }}.</strong>
+        The sheet is safe on this device — keep scoring.
+        <template v-if="syncStatus === 'syncing'">Sending…</template>
+        <template v-else-if="syncRetryIn">Retrying in {{ syncRetryIn }}s.</template>
+        <template v-else>Retrying…</template>
+      </p>
+      <button type="button" :disabled="syncStatus === 'syncing'" @click="sendNow">
+        Send now
+      </button>
+    </div>
     <template v-if="match">
       <TchoukScore
         :teams="match.teams"
@@ -222,10 +244,43 @@ main { width: 100%; max-width: 720px; margin: 0 auto; }
   color: #22c55e;
   background: rgba(34, 197, 94, 0.12);
 }
-.sync.failed {
+.sync.failed,
+.sync.gone {
   color: #f87171;
   background: rgba(248, 113, 113, 0.12);
 }
+.unsent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: -1rem 0 1.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(244, 123, 35, 0.08);
+  border: 1px solid #fcd9b6;
+  border-radius: 8px;
+  text-align: left;
+}
+.unsent p {
+  flex: 1;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #64748b;
+}
+.unsent strong { color: #9a3412; font-weight: 600; }
+.unsent button {
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #f47b23;
+  border-radius: 6px;
+  background: transparent;
+  color: #9a3412;
+}
+.unsent button:hover:not(:disabled) { background: rgba(244, 123, 35, 0.15); }
+.unsent button:disabled { opacity: 0.5; cursor: not-allowed; }
 .spinner {
   width: 1rem;
   height: 1rem;
