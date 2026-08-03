@@ -31,7 +31,7 @@ const { status: syncStatus, sync } = useSheetSync(() =>
 
 // Tell the user why this match can't continue and send them back to the code
 // screen. Idempotent: whichever reason gets there first owns the exit.
-const { alert } = useConfirm();
+const { alert, confirm } = useConfirm();
 let leaving = false;
 const leaveToCodeScreen = async (message: string) => {
   if (leaving) return;
@@ -89,6 +89,24 @@ const onGameEventChange = (data: GameSheet) => {
 // The raw sheet JSON is hidden by default; a footer toggle reveals it. It reads
 // the live sheet from the store so it renders even before the first change.
 const debug = ref(false);
+
+// Safe mode keeps the event log from being edited beyond points and the last
+// event. Deliberately not persisted: every refresh comes back protected, so an
+// unlocked log is always a fresh, conscious choice.
+const safeMode = ref(true);
+
+// Unlocking is the risky direction, so it is the one that asks.
+const toggleSafeMode = async () => {
+  if (!safeMode.value) {
+    safeMode.value = true;
+    return;
+  }
+  const ok = await confirm(
+    'Turn off safe mode? Every event in the log becomes deletable, including the ones that define the match timeline.',
+    { confirmLabel: 'Turn off', cancelLabel: 'Keep safe mode' },
+  );
+  if (ok) safeMode.value = false;
+};
 </script>
 
 <template>
@@ -127,8 +145,23 @@ const debug = ref(false);
       <TchoukScore
         :teams="match.teams"
         :match-key="matchKey"
+        :safe-mode="safeMode"
         @game-event-change="onGameEventChange"
       />
+      <button
+        type="button"
+        class="safe-mode"
+        :class="{ off: !safeMode }"
+        role="switch"
+        :aria-checked="safeMode"
+        @click="toggleSafeMode"
+      >
+        <span class="track" aria-hidden="true"><span class="knob" /></span>
+        <span class="label">
+          Safe mode
+          <small>{{ safeMode ? 'Only points and the last event can be deleted' : 'Every event can be deleted' }}</small>
+        </span>
+      </button>
       <pre v-if="debug" class="debug">{{ JSON.stringify(match.store.sheet, null, 2) }}</pre>
       <button type="button" class="debug-toggle" @click="debug = !debug">
         {{ debug ? 'Hide debug' : 'Debug mode' }}
@@ -210,6 +243,58 @@ main { width: 100%; max-width: 720px; margin: 0 auto; }
   color: #64748b;
   font-size: 0.9rem;
 }
+.safe-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #1e293b;
+  font: inherit;
+  cursor: pointer;
+}
+.safe-mode.off {
+  border-color: #fecaca;
+  background: rgba(220, 38, 38, 0.04);
+}
+.safe-mode .track {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 1.25rem;
+  padding: 0.125rem;
+  border-radius: 999px;
+  background: #22c55e;
+  transition: background 0.15s;
+}
+.safe-mode.off .track { background: #cbd5e1; }
+.safe-mode .knob {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #ffffff;
+  transform: translateX(1rem);
+  transition: transform 0.15s;
+}
+.safe-mode.off .knob { transform: translateX(0); }
+.safe-mode .label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.safe-mode small {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.safe-mode.off small { color: #dc2626; }
 .debug {
   margin-top: 2rem;
   padding: 1rem;

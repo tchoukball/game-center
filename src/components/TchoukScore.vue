@@ -12,6 +12,8 @@ const props = defineProps<{
   teams: TchoukTeam[];
   /** Scopes the match state/storage — usually `"<platformSlug>:<matchId>"`. */
   matchKey: string;
+  /** Guards the event log against deleting anything but points and the last event. */
+  safeMode: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -71,7 +73,7 @@ watch(
     @end-period="store.endPeriod"
     @end-match="store.endMatch"
   />
-  <EventLog :sheet="sheet" @delete="store.removeEvent" />
+  <EventLog :sheet="sheet" :safe-mode="safeMode" @delete="store.removeEvent" />
 </template>
 
 <style scoped>

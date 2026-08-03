@@ -6,6 +6,8 @@ import type { GameSheet, TchoukEvent, TchoukEventType, TeamId } from '../types';
 
 const props = defineProps<{
   sheet: GameSheet;
+  /** Guards the log: with it off, any event can be deleted. */
+  safeMode: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -44,13 +46,22 @@ const rows = computed(() =>
 
 const isPointEvent = (event: TchoukEvent) => event.type.startsWith('score_');
 
-// Point events can always be deleted. Time/phase events form the match
-// timeline, so only the most recent one (the last log) may be removed.
+// Under safe mode, point events can always be deleted, but time/phase events
+// form the match timeline, so only the most recent one (the last log) may be
+// removed. With safe mode off, nothing is protected.
+const isProtected = (event: TchoukEvent, index: number) =>
+  !isPointEvent(event) && index !== props.sheet.events.length - 1;
+
 const canDelete = (event: TchoukEvent, index: number) =>
-  isPointEvent(event) || index === props.sheet.events.length - 1;
+  !props.safeMode || !isProtected(event, index);
 
 const requestDelete = async (index: number, event: TchoukEvent) => {
-  const ok = await confirm(`Delete event "${EVENT_LABELS[event.type]}"?`, {
+  // Removing a timeline event from the middle re-derives every phase and period
+  // after it, so say as much before it happens.
+  const warning = isProtected(event, index)
+    ? ' This event shapes the match timeline — removing it changes the phase and periods that follow.'
+    : '';
+  const ok = await confirm(`Delete event "${EVENT_LABELS[event.type]}"?${warning}`, {
     confirmLabel: 'Delete',
     cancelLabel: 'Keep',
   });
@@ -76,7 +87,10 @@ const detail = (event: TchoukEvent) => {
 
 <template>
   <section class="event-log">
-    <h3>Event log</h3>
+    <h3>
+      Event log
+      <span v-if="!safeMode" class="unlocked">Safe mode off</span>
+    </h3>
     <p v-if="!sheet.events.length" class="empty">No events yet.</p>
     <table v-else>
       <thead>
@@ -118,12 +132,23 @@ const detail = (event: TchoukEvent) => {
   margin-top: 2rem;
 }
 h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0 0 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #64748b;
+}
+.unlocked {
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
 }
 .empty {
   margin: 0;
